@@ -14,6 +14,7 @@ public enum PlaygroundData
     Player5 = 5,
     Ship = 10,
     ShipTouched = 11,
+    ShipDestroyed = 12,
 }
 
 

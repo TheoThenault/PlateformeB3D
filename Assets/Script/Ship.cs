@@ -14,7 +14,7 @@ public class Ship : MonoBehaviour
     public Vector3Int position;
     public Axe axe;
 
-    private Dictionary<Vector3Int, GameObject> childs = new();
+    public Dictionary<Vector3Int, ShipBlock> childs = new();
 
     private void Start()
     {
@@ -35,7 +35,7 @@ public class Ship : MonoBehaviour
     }
     public void Clear()
     {
-        foreach(KeyValuePair<Vector3Int, GameObject> child in childs)
+        foreach(KeyValuePair<Vector3Int, ShipBlock> child in childs)
         {
             DestroyImmediate(child.Value);
             GameManager.Instance.playground[child.Key.x, child.Key.y, child.Key.z] = PlaygroundData.Empty;
@@ -46,14 +46,26 @@ public class Ship : MonoBehaviour
 
     public void InstanciateChilds(GameObject blockPrefab)
     {
-        foreach (KeyValuePair<Vector3Int, GameObject> child in childs)
+        List<Vector3Int> positionsList = new();
+
+        foreach (Vector3Int positionChild in childs.Keys)
         {
-            if (!child.Value)
+            positionsList.Add(positionChild);
+        }
+
+        foreach (Vector3Int positionChild in positionsList)
+        {
+            if (!childs[positionChild])
             {
                 GameObject block = Instantiate(blockPrefab, transform);
-                block.transform.position = child.Key - new Vector3Int(GameManager.Instance.playgroundSize / 2, 
+                block.transform.position = positionChild - new Vector3Int(GameManager.Instance.playgroundSize / 2, 
                     GameManager.Instance.playgroundSize / 2, 
                     GameManager.Instance.playgroundSize / 2);
+
+                ShipBlock blockScript = block.GetComponent<ShipBlock>();
+                blockScript.position = positionChild;
+                blockScript.ship = this;
+                childs[positionChild] = blockScript;
             }
         }
     }
