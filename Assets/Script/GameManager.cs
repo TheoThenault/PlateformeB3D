@@ -43,8 +43,7 @@ public class GameManager
     public List<Ship2D> ships2D;
     public List<Ship3D> ships3D;
 
-    public int IdPartie;
+    public int PartyID;
 
-
-
+    public int PlayerID;
 }

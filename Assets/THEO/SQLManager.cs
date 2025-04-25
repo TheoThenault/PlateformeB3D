@@ -10,13 +10,13 @@ using Azure;
 using System;
 using Random = UnityEngine.Random;
 
-public class SQLManager : MonoBehaviour
+public static class SQLManager
 {
-    private string Connexion = "Server=theothenault.fr;Port=8090;Database=plateforme_B3D;Uid=Unity;Pwd=";
+    private static string Connexion = "Server=theothenault.fr;Port=8090;Database=plateforme_B3D;Uid=Unity;Pwd=_4>95U#3%k7=S^@fXh7!5wQ_Dvqww#/<";
 
-    private MySqlConnection sqlConnection;
+    private static MySqlConnection sqlConnection;
 
-    private void Start()
+    public static void Setup()
     {
         sqlConnection = new MySqlConnection(Connexion);
         //MySqlConnector.Logging.MySqlConnectorLogManager.Provider = new MySqlConnector.Logging.ConsoleLoggerProvider(MySqlConnector.Logging.MySqlConnectorLogLevel.Debug);
@@ -27,12 +27,12 @@ public class SQLManager : MonoBehaviour
             Debug.Log("OK");
     }
 
-    private void OnDestroy()
+    public static void Close()
     {
         sqlConnection.Close();
     }
 
-    public void test()
+    public static void test()
     {
         //CreatePlayer("Theo", "AZERTY", "Theo", "Theo@example.com", "AZERTY123", 12);
 
@@ -43,17 +43,25 @@ public class SQLManager : MonoBehaviour
         //Debug.Log(NameAndAgeAndCourrielOfMostPlayerWithMostGamePlayed());
     }
 
-    public void CreatePlayer(string Pseudo, string Nom, string Prenom, string Courriel, string Motdepasse, int Age)
+    public static int CreatePlayer(string Pseudo, string Nom, string Prenom, string Courriel, string Motdepasse, int Age)
     {
         var cmd = new MySqlCommand("INSERT INTO Joueur (Pseudo, Nom, Prenom, Courriel, MotDePasse, Age)" +
                                     "VALUES ('" + Pseudo + "', '" + Nom + "', '" + Prenom + "', '" + Courriel + "', '" + Motdepasse + "', '" + Age + "')", sqlConnection);
         cmd.ExecuteNonQuery();
+
+        int playerID = 0;
+        cmd = new MySqlCommand("SELECT id FROM Joueur ORDER BY id DESC LIMIT 1;", sqlConnection);
+        var reader = cmd.ExecuteReader();
+        if (reader.Read())
+            playerID = reader.GetInt32("id");
+        reader.Close();
+        return playerID;
     }
 
-    public int CreatePartie()
+    public static int CreatePartie()
     {
         int partieId = 0;
-        var date = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss");
+        var date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
         
         var cmd = new MySqlCommand("INSERT INTO Partie (Jeu, Debut) VALUES ('B3D', '"+date+"')", sqlConnection);
         cmd.ExecuteNonQuery();
@@ -66,7 +74,7 @@ public class SQLManager : MonoBehaviour
         return partieId;
     }
 
-    public List<(string, string, int)> NameAndAgeOfPlayersFromPartie(int partieId)
+    public static List<(string, string, int)> NameAndAgeOfPlayersFromPartie(int partieId)
     {
         var cmd = new MySqlCommand("SELECT Nom, Prenom, Age FROM Joueur j INNER JOIN Participants p ON j.id = p.idJoueur INNER JOIN Partie pr ON p.idPartie = pr.id WHERE pr.Jeu = 'B3D' AND j.Age >= 0 AND p.idPartie = " + partieId, sqlConnection);
         var reader = cmd.ExecuteReader();
@@ -80,7 +88,7 @@ public class SQLManager : MonoBehaviour
         return res;
     }
 
-    public (string, int, string) NameAndAgeAndCourrielOfMostPlayerWithMostGamePlayed()
+    public static (string, int, string) NameAndAgeAndCourrielOfMostPlayerWithMostGamePlayed()
     {
         var cmd = new MySqlCommand("SELECT Nom, Age, Courriel FROM Joueur j INNER JOIN Participants p ON j.id = p.idJoueur INNER JOIN Partie pr ON p.idPartie = pr.id WHERE pr.Jeu = 'B3D' AND j.Age >= 0 GROUP BY j.id LIMIT 1;", sqlConnection);
         var reader = cmd.ExecuteReader();
@@ -93,13 +101,13 @@ public class SQLManager : MonoBehaviour
         return ("null", -1, "null");
     }
 
-    public void SupprimerJoueur(int idJoueur)
+    public static void SupprimerJoueur(int idJoueur)
     {
         var cmd = new MySqlCommand("UPDATE Joueur SET Pseudo = 'null', MotDePasse = 'null', Courriel = 'null', Nom = 'null', Prenom = 'null', Age = -1 WHERE id = "+ idJoueur, sqlConnection);
         cmd.ExecuteNonQuery();
     }
 
-    public int AveragePlayerAge()
+    public static int AveragePlayerAge()
     {
         var cmd = new MySqlCommand("SELECT AVG(sub.Age) AS avg_age FROM(SELECT DISTINCT j.id, j.Age FROM Joueur j INNER JOIN Participants p ON j.id = p.idJoueur INNER JOIN Partie pa ON p.idPartie = pa.id WHERE pa.Jeu = 'B3D' AND j.Age >= 0) AS sub;", sqlConnection);
         var reader = cmd.ExecuteReader();
@@ -112,7 +120,7 @@ public class SQLManager : MonoBehaviour
         return -1;
     }
 
-    public string NomJoueurAvecLePlusDeVictoire()
+    public static string NomJoueurAvecLePlusDeVictoire()
     {
         var cmd = new MySqlCommand("SELECT Nom FROM Joueur j INNER JOIN Gagnants g ON j.id = g.idJoueur INNER JOIN Partie p ON g.idPartie = p.id WHERE p.Jeu = 'B3D' AND j.Age >= 0 GROUP BY j.id LIMIT 1;", sqlConnection);
         var reader = cmd.ExecuteReader();
@@ -125,7 +133,7 @@ public class SQLManager : MonoBehaviour
         return "null";
     }
 
-    public List<string> NomsJeuxClassesParNbPartieDecroissant()
+    public static List<string> NomsJeuxClassesParNbPartieDecroissant()
     {
         var cmd = new MySqlCommand("SELECT Jeu FROM Partie p GROUP BY Jeu ORDER BY COUNT(Jeu) DESC", sqlConnection);
         var reader = cmd.ExecuteReader();
@@ -139,7 +147,7 @@ public class SQLManager : MonoBehaviour
         return res;
     }
 
-    public int NombreJoueurB3D()
+    public static int NombreJoueurB3D()
     {
         var cmd = new MySqlCommand("SELECT COUNT(*) AS nb FROM(SELECT p.idJoueur FROM Participants p INNER JOIN Partie pa ON p.idPartie = pa.id INNER JOIN Joueur j ON p.idJoueur = j.id WHERE j.Age >= 0 GROUP BY p.idJoueur HAVING SUM(pa.Jeu = 'B3D') > 0 AND SUM(pa.Jeu<> 'B3D') = 0) AS sub;", sqlConnection);
         var reader = cmd.ExecuteReader();
@@ -152,7 +160,7 @@ public class SQLManager : MonoBehaviour
         return -1;
     }
 
-    public List<(int, int, int)> NombrePartieParSemaineB3D()
+    public static List<(int, int, int)> NombrePartieParSemaineB3D()
     {
         var cmd = new MySqlCommand("SELECT YEAR(pa.Debut) AS annee, WEEK(pa.Debut, 3) AS semaine, COUNT(*) AS nb_parties FROM Partie pa WHERE pa.Jeu = 'B3D' GROUP BY YEAR(pa.Debut), WEEK(pa.Debut, 3) ORDER BY annee, semaine;", sqlConnection);
         var reader = cmd.ExecuteReader();
@@ -161,6 +169,35 @@ public class SQLManager : MonoBehaviour
         {
             Debug.Log(reader.GetInt32("annee") + " " + reader.GetInt32("semaine") + " " + reader.GetInt32("nb_parties"));
             res.Add((reader.GetInt32("annee"), reader.GetInt32("semaine"), reader.GetInt32("nb_parties")));
+        }
+        reader.Close();
+        return res;
+    }
+
+    public static int PlayerID(string pseudo, string motdepasse)
+    {
+        var cmd = new MySqlCommand("SELECT id FROM Joueur WHERE Age >= 0 AND Pseudo = '"+pseudo+"' AND MotDePasse = '"+motdepasse+"' LIMIT 1;", sqlConnection);
+        Debug.Log(cmd.CommandText);
+        var reader = cmd.ExecuteReader();
+        if (reader.Read())
+        {
+            int v = reader.GetInt32("id");
+            reader.Close();
+            return v;
+        }
+        return -1;
+    }
+    
+    public static List<int> PartieList()
+    {
+        var cmd = new MySqlCommand("SELECT p.id FROM Partie p LEFT JOIN Gagnants g ON p.id = g.idPartie WHERE g.idJoueur IS NULL;", sqlConnection);
+        Debug.Log(cmd.CommandText);
+        var reader = cmd.ExecuteReader();
+        List<int> res = new List<int>();
+        while (reader.Read())
+        {
+            Debug.Log(reader.GetInt32("id"));
+            res.Add(reader.GetInt32("id"));
         }
         reader.Close();
         return res;
